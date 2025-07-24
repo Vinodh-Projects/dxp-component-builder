@@ -153,12 +153,10 @@ class AgentOrchestrator:
         
         key_mapping = {
             "slingModel": "sling_model",
-            "slingModelImpl": "sling_model_impl", 
             "htl": "htl",
             "dialog": "dialog",
             "contentXml": "content_xml",
-            "clientlibs": "clientlibs",
-            "junit": "junit"
+            "clientlibs": "clientlibs"
         }
         
         mapped_files = {}
@@ -171,6 +169,10 @@ class AgentOrchestrator:
                     mapped_files[new_key] = ""
                 elif new_key == "clientlibs":
                     mapped_files[new_key] = {}
+        
+        # Always provide optional fields even if not in mapping
+        mapped_files["sling_model_impl"] = None
+        mapped_files["junit"] = None
         
         return mapped_files
     
