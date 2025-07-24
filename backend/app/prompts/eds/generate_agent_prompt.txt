@@ -1,0 +1,127 @@
+Your task is to generate the JSON structure for a new **AEM Edge Delivery Services block**. This includes a complete JavaScript file, a complete CSS file, a markdown table (preferred two column) representation, and sample input HTML based on the provided requirements and extracted block details.
+
+**Input Block Details:**
+{
+  "blockName": "{{block_name}}",
+  "blockStyle": "{{block_style}}",
+  "blockType": "{{block_type}}", // Use "custom" if not specified
+  "functionalityDescription": "{{functionality_description}}"
+}
+
+**Project Context (for reference, do not directly include in output files unless necessary for functionality):**
+Use any available AEM JavaScript utility functions as required. These include methods for DOM decoration, lazy loading, RUM tracking, metadata handling, etc.
+
+Available AEM Utility Functions `aem.js` (for reference):
+
+// Converts a string to a CSS-safe class name
+toClassName(name: string): string
+
+// Retrieves content of <meta> tags
+getMetadata(name: string, doc?: Document): string
+
+// Creates a responsive <picture> element
+createOptimizedPicture(src: string, alt?: string, eager?: boolean, breakpoints?: Array): Element
+
+// Wraps inline text content of block cells in <p>
+wrapTextNodes(block: Element): void
+
+// Decorates links as buttons
+decorateButtons(element: Element): void
+
+// Converts divs into standard .section layout
+decorateSections(main: Element): void
+
+// Creates a block DOM element
+buildBlock(blockName: string, content: any): Element
+
+// Adds metadata and classes to a block
+decorateBlock(block: Element): void
+
+
+**Requirements for Block Content:**
+
+1.  **Folder/File Structures & Naming:**
+    * Generate a `{{block_name}}.js` file.
+    * Generate a `{{block_name}}.css` file.
+    * Ensure file names are consistent with the extracted `blockName`.
+
+2.  **Functionality of Edge Delivery Services Block:**
+    * The generated block (through its JS and CSS) must be fully functional as per the `functionalityDescription` and `blockStyle`.
+
+3.  **CSS Styling (`{{block_name}}.css`):**
+    * Define styles for the block using the `blockName` as the primary class (e.g., `.block_name`).
+    * Add styles for the `blockStyle` as a modifier class (e.g., `.block_name--style`).
+    * Add fixed height and width for proper display where appropriate.
+    * **Do not** add styles directly in the JavaScript file.
+    * **Do not** include comments like `/* add your styles here */`.
+
+4.  **JavaScript Functionality (`{{block_name}}.js`):**
+    - Export a default `async function decorate(block)`.
+       - Use the `decorate` method to:
+         - Add necessary classes or IDs for styling or functionality.
+         - Implement the required block-specific behavior.
+       - Avoid adding styles directly in the JavaScript file.
+    - If the block requires utility functions from AEM’s shared JS:
+      - Import and use the necessary helpers from `aem.js`, such as:
+        import { someUtilityFunction } from '../../scripts/aem.js';
+
+      - Example: If working with images, you might use:
+        import { createOptimizedPicture } from '../../scripts/aem.js';
+        const optimizedMedia = createOptimizedPicture(src, alt);
+
+      - Replace or extend this with any other relevant AEM helper function as needed.
+
+    - Recommended Function Structure:
+      ````
+      import { /* required helpers */ } from '../../scripts/aem.js';
+      export default async function decorate(block) {
+        const wrapper = document.createElement('div');
+        [...block.children].forEach((row) => {
+          // Logic to extract and rebuild block content
+
+          // Example usage of utility (replace with specific logic as needed)
+          // const optimized = someUtilityFunction(...);
+
+          const content = document.createElement('div');
+          content.textContent = row.textContent;
+          wrapper.appendChild(content);
+        });
+
+        block.textContent = '';
+        block.append(wrapper);
+      }
+      ```
+
+5.  **Markdown Table Representation:**
+    * Generate a two-column markdown table representing the block's expected content structure.
+    * Clearly define what content goes into each "cell" or row of the block.
+
+6.  **Input HTML Structure:**
+    * Generate a sample `<div>` based HTML structure that the `decorate` function will receive.
+    * Only `<div>` elements should be used to represent the block structure.
+    * **Do not** add any classes, IDs, or other attributes to internal `<div>` elements in this initial HTML; these are added by the JavaScript's `decorate` function.
+    * Focus on text-based content for the block. Avoid using images or other media in the HTML.
+
+7. A **Relevant Block code** may be provided for guidance, but ensure the generated code is original and tailored to the specific block requirements.
+   * If the Relevant Block code is available**, use it to guide your logic, structure, and implementation details, but do not copy it verbatim. Ensure the generated code is unique and meets the specific requirements of the new block.
+
+**Expected Output (valid JSON):** A JSON object containing:
+{
+  "javascriptFile": {
+    "fileName": "string", // e.g., "hero.js"
+    "content": "string" // The complete JavaScript code for the block
+  },
+  "cssFile": {
+    "fileName": "string", // e.g., "hero.css"
+    "content": "string" // The complete CSS code for the block
+  },
+  "markdownTable": "string",
+  "inputHtml": "string" // The sample input HTML structure for the block
+}
+
+**Rules:**
+- All generated code (JS, CSS) and content (markdown table, HTML) must be complete and functional.
+- Ensure strict alignment between the HTML structure, CSS selectors (classes added by JS), and JS manipulation.
+- Do not provide placeholders or incomplete snippets.
+- If unable to generate the required output, respond with: `"I can't help with that"`.
+- Ensure the output is strictly valid JSON.
