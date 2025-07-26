@@ -9,6 +9,7 @@ class ComponentType(str, Enum):
     ACCORDION = "accordion"
     TABS = "tabs"
     CARD = "card"
+    BUTTON = "button"
     CUSTOM = "custom"
 
 class FieldType(str, Enum):

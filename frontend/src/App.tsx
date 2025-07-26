@@ -4,6 +4,8 @@ import { Layers } from 'lucide-react';
 import { Chat } from './components/Chat';
 import { History } from './components/History';
 import { CodeDisplay } from './components/CodeDisplay';
+import { DeploymentModal } from './components/DeploymentModal';
+import { NotificationSystem, Notification } from './components/Notifications';
 import { APIService } from './services/api';
 import { Component, ChatMessage, GenerationStatus } from './types';
 
@@ -19,6 +21,8 @@ export default function App() {
     progress: 0,
     currentStep: ''
   });
+  const [isDeploymentModalOpen, setIsDeploymentModalOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   
   const sessionId = useMemo(() => `session_${Date.now()}`, []);
 
@@ -239,14 +243,87 @@ export default function App() {
     }
   };
 
-  const handleBuild = () => {
+  const handleBuild = async () => {
     console.log('Building component...');
-    // Implement build logic
+    
+    try {
+      // Add notification that build is starting
+      addNotification({
+        id: `build_start_${Date.now()}`,
+        type: 'info',
+        title: 'Build Started',
+        message: 'Building UI applications module...',
+        duration: 3000
+      });
+
+      // Build the ui.apps module (most relevant for component development)
+      const result = await APIService.buildModule('ui.apps');
+      
+      if (result.success) {
+        addNotification({
+          id: `build_success_${Date.now()}`,
+          type: 'success',
+          title: 'Build Successful',
+          message: `Module '${result.module}' built successfully`,
+          duration: 5000
+        });
+      } else {
+        addNotification({
+          id: `build_error_${Date.now()}`,
+          type: 'error',
+          title: 'Build Failed',
+          message: result.error || result.message,
+          duration: 10000
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Build failed';
+      addNotification({
+        id: `build_error_${Date.now()}`,
+        type: 'error',
+        title: 'Build Error',
+        message: errorMessage,
+        duration: 10000
+      });
+    }
   };
 
   const handleDeploy = () => {
-    console.log('Deploying component...');
-    // Implement deploy logic
+    console.log('Opening deployment modal...');
+    setIsDeploymentModalOpen(true);
+  };
+
+  const handleDeploymentComplete = (success: boolean, serverUrl?: string) => {
+    console.log(`Deployment ${success ? 'completed successfully' : 'failed'}`);
+    
+    // Add notification
+    const notification: Notification = {
+      id: `deploy_${Date.now()}`,
+      type: success ? 'success' : 'error',
+      title: success ? 'Deployment Successful' : 'Deployment Failed',
+      message: success 
+        ? 'Your AEM components have been successfully deployed to the server.'
+        : 'There was an error deploying your components. Please check the logs for details.',
+      duration: success ? 5000 : 10000, // Success notifications disappear after 5s, errors after 10s
+      actions: success ? [{
+        label: 'View in AEM',
+        onClick: () => {
+          // Use the server URL from backend or fallback to localhost
+          const aemUrl = serverUrl || 'http://localhost:4502';
+          window.open(aemUrl, '_blank');
+        }
+      }] : []
+    };
+    
+    addNotification(notification);
+  };
+
+  const addNotification = (notification: Notification) => {
+    setNotifications(prev => [...prev, notification]);
+  };
+
+  const removeNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   const handlePublishToGit = () => {
@@ -314,8 +391,8 @@ export default function App() {
           />
         </div>
         
-        {/* Right Panel (Code Display) - 40% width, always visible */}
-        <div className="flex-1 min-w-[400px] bg-gray-900">
+        {/* Right Panel (Code Display) - remaining width */}
+        <div className="flex-1 min-w-[350px] bg-gray-900">
           <CodeDisplay
             selectedComponent={selectedComponent}
             generationStatus={generationStatus}
@@ -325,6 +402,19 @@ export default function App() {
           />
         </div>
       </div>
+
+      {/* Deployment Modal */}
+      <DeploymentModal
+        isOpen={isDeploymentModalOpen}
+        onClose={() => setIsDeploymentModalOpen(false)}
+        onDeploymentComplete={handleDeploymentComplete}
+      />
+
+      {/* Notification System */}
+      <NotificationSystem
+        notifications={notifications}
+        onRemove={removeNotification}
+      />
     </div>
   );
 }

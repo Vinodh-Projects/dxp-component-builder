@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+          xmlns:jcr="http://www.jcp.org/jcr/1.0"
+          xmlns:cq="http://www.day.com/jcr/cq/1.0"
+          jcr:primaryType="cq:Dialog"
+          jcr:title="Hero Banner">
+    <content jcr:primaryType="nt:unstructured"
+             sling:resourceType="granite/ui/components/coral/foundation/container">
+        <items jcr:primaryType="nt:unstructured">
+            <backgroundImage jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/fileupload"
+                            fieldLabel="Background Image/Video"
+                            name="./backgroundImage"
+                            allowUpload="true"
+                            mimeTypes="image/*,video/*"
+                            required="true"
+                            description="Upload a background image or video for the hero banner."/>
+            <headline jcr:primaryType="nt:unstructured"
+                      sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                      fieldLabel="Headline"
+                      name="./headline"
+                      required="true"
+                      maxlength="100"
+                      description="Main headline text for the hero banner."/>
+            <subheadline jcr:primaryType="nt:unstructured"
+                         sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                         fieldLabel="Subheadline"
+                         name="./subheadline"
+                         maxlength="150"
+                         description="Optional subheadline text for additional context."/>
+            <ctaButtons jcr:primaryType="nt:unstructured"
+                        sling:resourceType="granite/ui/components/coral/foundation/form/multifield"
+                        fieldLabel="CTA Buttons"
+                        name="./ctaButtons"
+                        description="Call-to-action buttons with links."
+                        maxItems="3">
+                <field jcr:primaryType="nt:unstructured"
+                       sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                       name="./ctaButton"/>
+            </ctaButtons>
+            <alignment jcr:primaryType="nt:unstructured"
+                       sling:resourceType="granite/ui/components/coral/foundation/form/select"
+                       fieldLabel="Content Alignment"
+                       name="./alignment"
+                       required="true"
+                       description="Select the alignment for the text content.">
+                <items jcr:primaryType="nt:unstructured">
+                    <left jcr:primaryType="nt:unstructured"
+                          text="Left"
+                          value="left"/>
+                    <center jcr:primaryType="nt:unstructured"
+                            text="Center"
+                            value="center"/>
+                    <right jcr:primaryType="nt:unstructured"
+                           text="Right"
+                           value="right"/>
+                </items>
+            </alignment>
+            <overlay jcr:primaryType="nt:unstructured"
+                     sling:resourceType="granite/ui/components/coral/foundation/form/select"
+                     fieldLabel="Overlay"
+                     name="./overlay"
+                     description="Choose an overlay option for text readability.">
+                <items jcr:primaryType="nt:unstructured">
+                    <none jcr:primaryType="nt:unstructured"
+                          text="None"
+                          value="none"/>
+                    <dark jcr:primaryType="nt:unstructured"
+                          text="Dark"
+                          value="dark"/>
+                    <light jcr:primaryType="nt:unstructured"
+                           text="Light"
+                           value="light"/>
+                </items>
+            </overlay>
+        </items>
+    </content>
+</jcr:root>

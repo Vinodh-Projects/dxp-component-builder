@@ -384,7 +384,7 @@ class ComponentService:
         # Define output paths aligned with Maven archetype structure
         base_output_dir = Path(__file__).parent.parent.parent.parent / "output" / app_id
 
-        sling_model_dir = base_output_dir / "core" / "src" / "main" / "java" / pkg_path /"models"
+        sling_model_dir = base_output_dir / "core" / "src" / "main" / "java" / pkg_path / "core" / "models"
         ui_apps_dir = base_output_dir / "ui.apps" / "src" / "main" / "content" / "jcr_root" / "apps" / app_id / "components" / component_name
         ui_apps_clientlib_dir = base_output_dir / "ui.apps" / "src" / "main" / "content" / "jcr_root" / "apps" / app_id / "components" / component_name / "clientlib"
         ui_apps_clientlib_js_dir = ui_apps_clientlib_dir / "js"
@@ -413,10 +413,63 @@ class ComponentService:
                 content = content.replace('\\\\', '\\')
             return content
 
-        # Write Sling Model Java class directly from AI output
-        java_file_path = sling_model_dir / f"{component_name}Model.java"
+        # Helper function to fix common Java import and annotation issues
+        def fix_java_code_issues(java_content: str) -> str:
+            """Fix common issues in AI-generated Java code"""
+            if not java_content:
+                return java_content
+            
+            # Fix incorrect InjectionStrategy import
+            java_content = java_content.replace(
+                'import org.apache.sling.models.annotations.InjectionStrategy;',
+                'import org.apache.sling.models.annotations.injectorspecific.InjectionStrategy;'
+            )
+            
+            # Replace deprecated injection pattern with modern pattern
+            import re
+            java_content = re.sub(
+                r'@ValueMapValue\(injectionStrategy\s*=\s*InjectionStrategy\.OPTIONAL\)',
+                '@ValueMapValue\n    @Optional',
+                java_content
+            )
+            
+            # Add missing imports if they're used but not imported
+            missing_imports = []
+            if 'ArrayList' in java_content and 'import java.util.ArrayList;' not in java_content:
+                missing_imports.append('import java.util.ArrayList;')
+            if '@Optional' in java_content and 'import org.apache.sling.models.annotations.Optional;' not in java_content:
+                missing_imports.append('import org.apache.sling.models.annotations.Optional;')
+            if 'List<' in java_content and 'import java.util.List;' not in java_content:
+                missing_imports.append('import java.util.List;')
+            
+            # Insert missing imports after package declaration
+            if missing_imports:
+                package_line_match = re.search(r'(package\s+[^;]+;)', java_content)
+                if package_line_match:
+                    package_line = package_line_match.group(1)
+                    imports_text = '\n' + '\n'.join(missing_imports)
+                    java_content = java_content.replace(package_line, package_line + imports_text)
+            
+            return java_content
+
+        # Extract component name from shared context and create proper class name
+        shared_context = component_data.get('sharedContext', {})
+        component_display_name = shared_context.get('componentName', component_name)
+        
+        # Create proper class name from component name (e.g., "feature-grid" -> "FeatureGrid")
+        class_name = self._create_class_name_from_component_name(component_display_name)
+        
+        # Write Sling Model Java class with proper class name
+        java_file_path = sling_model_dir / f"{class_name}.java"
+        java_content = process_file_content(component_data['slingModel'])
+        
+        # Fix class name in the Java content to match filename
+        java_content = self._fix_class_name_in_java_content(java_content, class_name)
+        java_content = fix_java_code_issues(java_content)
+        
         with open(java_file_path, 'w', encoding='utf-8') as f:
-            f.write(process_file_content(component_data['slingModel']))
+            f.write(java_content)
+        logger.info(f"Created Sling Model: {java_file_path} with class name: {class_name}")
 
         # Write .content.xml file directly from AI output
         content_xml_file_path = ui_apps_dir / f".content.xml"
@@ -483,6 +536,48 @@ class ComponentService:
             "coreJavaDir": str(sling_model_dir),
             "uiAppsDir": str(ui_apps_dir)
         }
+
+    def _create_class_name_from_component_name(self, component_name: str) -> str:
+        """Convert component name to proper Java class name (PascalCase)"""
+        if not component_name:
+            return "ComponentModel"
+        
+        # Remove common suffixes and clean the name
+        cleaned_name = component_name.lower()
+        cleaned_name = re.sub(r'[^a-zA-Z0-9\s\-_]', '', cleaned_name)
+        
+        # Split by common delimiters and convert to PascalCase
+        words = re.split(r'[\s\-_]+', cleaned_name)
+        class_name = ''.join(word.capitalize() for word in words if word)
+        
+        # Ensure it doesn't end with "Model" already, if not add it
+        if not class_name.endswith('Model'):
+            class_name += 'Model'
+            
+        return class_name
+
+    def _fix_class_name_in_java_content(self, java_content: str, correct_class_name: str) -> str:
+        """Fix the class name in Java content to match the filename"""
+        if not java_content or not correct_class_name:
+            return java_content
+        
+        # Pattern to match class declaration
+        class_pattern = r'public\s+class\s+(\w+)\s*{'
+        match = re.search(class_pattern, java_content)
+        
+        if match:
+            old_class_name = match.group(1)
+            # Replace the class name in the declaration
+            java_content = re.sub(
+                r'public\s+class\s+' + re.escape(old_class_name) + r'\s*{',
+                f'public class {correct_class_name} {{',
+                java_content
+            )
+            logger.info(f"Fixed class name from '{old_class_name}' to '{correct_class_name}'")
+        else:
+            logger.warning(f"Could not find class declaration in Java content to fix class name")
+        
+        return java_content
 
     def _create_folder_structure(self, app_id: str, component_name: str) -> Dict[str, Any]:
         return {

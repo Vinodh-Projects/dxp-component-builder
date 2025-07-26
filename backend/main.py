@@ -9,6 +9,7 @@ import uvicorn
 
 from app.config import settings
 from app.routers import component_routes, health_router
+from app.routers.aem_routes import router as aem_router
 from app.middleware import setup_middleware
 from app.agents import AgentOrchestrator
 
@@ -36,6 +37,7 @@ setup_middleware(app)
 # Include routers
 app.include_router(health_router.router, prefix="/api/v1/health", tags=["health"])
 app.include_router(component_routes.router, prefix="/api/v1/components", tags=["components"])
+app.include_router(aem_router, prefix="/api/v1/aem", tags=["aem-deployment"])
 
 if __name__ == "__main__":
     uvicorn.run(

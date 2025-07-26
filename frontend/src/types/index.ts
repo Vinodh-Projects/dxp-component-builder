@@ -54,6 +54,15 @@ export interface ComponentResponse {
   created_at: string;
 }
 
+export interface ComponentPreview {
+  html: {
+    structure: string;
+  };
+  css: {
+    styles: string;
+  };
+}
+
 export interface APIOptions {
   include_tests?: boolean;
   include_clientlibs?: boolean;
@@ -64,3 +73,44 @@ export interface APIOptions {
   app_id?: string;
   package_name?: string;
 }
+
+export interface DeploymentStatus {
+  deployment_id: string;
+  status: 'in_progress' | 'completed' | 'failed';
+  success?: boolean;
+  message?: string;
+  build_duration?: number;
+  deploy_duration?: number;
+  deployed_packages?: string[];
+  error?: string;
+  started_at?: string;
+  timestamp?: string;
+}
+
+export interface AEMServerStatus {
+  server_available: boolean;
+  server_url: string;
+  response?: string;
+  error?: string;
+}
+
+export interface ModuleBuildResult {
+  success: boolean;
+  module: string;
+  message: string;
+  build_output?: string;
+  deploy_output?: string;
+  error?: string;
+  timestamp?: string;
+}
+
+export interface DeploymentConfig {
+  project_path: string;
+  aem_server_url: string;
+  aem_username: string;
+  maven_profiles: string;
+  skip_tests: boolean;
+}
+
+// Make this file a module
+export {};

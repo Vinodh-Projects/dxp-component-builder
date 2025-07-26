@@ -22,6 +22,9 @@ class BaseAgent(ABC):
         self.anthropic_client = None
         if settings.ANTHROPIC_API_KEY:
             self.anthropic_client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        
+        # Change the model name from whatever it currently is to:
+        self.claude_model = "claude-sonnet-4-20250514"
     
     @abstractmethod
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -59,10 +62,10 @@ class BaseAgent(ABC):
                     ]
                 }
             ],
-            max_tokens=4096
+            max_completion_tokens=4096  # Updated for newer models
         )
         
-        return response.choices[0].message.content
+        return response.choices[0].message.content or ""
     
     @retry_async(max_attempts=3, delay=1.0)
     async def call_claude(self, prompt: str) -> str:
@@ -71,7 +74,7 @@ class BaseAgent(ABC):
             raise ValueError("Anthropic API key not configured")
         
         response = await self.anthropic_client.messages.create(
-            model=settings.CLAUDE_MODEL,
+            model=self.claude_model,
             messages=[
                 {"role": "user", "content": prompt}
             ],
@@ -79,7 +82,14 @@ class BaseAgent(ABC):
             max_tokens=8192
         )
         
-        return response.content[0].text
+        # Handle the response content properly
+        if response.content and len(response.content) > 0:
+            first_content = response.content[0]
+            # Check if it's a text block
+            if hasattr(first_content, 'text') and hasattr(first_content, 'type'):
+                if first_content.type == 'text':
+                    return first_content.text
+        return ""
     
     def parse_json_response(self, response: str) -> Dict[str, Any]:
         """Parse JSON from LLM response"""

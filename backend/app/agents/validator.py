@@ -18,35 +18,50 @@ VALIDATION CHECKLIST:
    - No placeholders or TODO comments
    - All methods implemented
    - All required files present
+   - Java class names match file names
+   - Package declarations are consistent
 
 2. AEM Best Practices
-   - Proper resource types
-   - Correct annotations
-   - Appropriate injection strategies
-   - Proper null handling
+   - Proper resource types matching between @Model and content.xml
+   - Correct annotations (@Model, @ValueMapValue, @Optional)
+   - No deprecated injection strategies
+   - Proper null handling and input validation
+   - Consistent naming conventions
 
-3. Performance
+3. Compilation Safety
+   - All required imports present
+   - No missing dependencies
+   - Proper syntax and balanced braces/parentheses
+   - Getter methods for all @ValueMapValue fields
+   - Valid HTL syntax and matched HTML tags
+
+4. Performance
    - Lazy loading implemented
    - Efficient selectors
    - Optimized client libraries
+   - Resource management (proper closing of ResourceResolver)
 
-4. Accessibility
+5. Accessibility
    - ARIA labels present
    - Semantic HTML
    - Keyboard navigation support
    - Screen reader compatibility
+   - Proper form field labels
 
-5. Security
-   - XSS prevention
+6. Security
+   - XSS prevention (no unsafe innerHTML, eval, document.write)
    - Input validation
    - Safe resource handling
+   - No hardcoded secrets or credentials
+   - SQL injection prevention
+   - Proper HTL output escaping
 
 OUTPUT FORMAT:
 {
   "validationStatus": "PASS/FAIL",
   "score": 0-100,
-  "issues": ["list of issues"],
-  "suggestions": ["list of suggestions"],
+  "issues": ["list of critical issues that must be fixed"],
+  "suggestions": ["list of improvements and best practices"],
   "details": {
     "completeness": 0-100,
     "bestPractices": 0-100,
@@ -107,12 +122,41 @@ OUTPUT FORMAT:
         required_files = ['slingModel', 'htl', 'dialog']
         missing_files = []
         for req_file in required_files:
-            if not files.get(req_file) or not files.get(req_file).strip():
+            file_content = files.get(req_file)
+            if not file_content or (isinstance(file_content, str) and not file_content.strip()):
                 missing_files.append(req_file)
                 scores["completeness"] -= 25
 
         if missing_files:
             issues.append(f"Missing or empty required files: {', '.join(missing_files)}")
+
+        # Check Java class name and file name consistency
+        if files.get('slingModel') and files.get('projectStructure', {}).get('slingModelPath'):
+            java_issues = self._validate_java_class_consistency(
+                files['slingModel'], 
+                files['projectStructure']['slingModelPath']
+            )
+            issues.extend(java_issues)
+            if java_issues:
+                scores["bestPractices"] -= 20
+
+        # Validate package declarations
+        package_issues = self._validate_package_declarations(files)
+        issues.extend(package_issues)
+        if package_issues:
+            scores["bestPractices"] -= 15
+
+        # Check for compilation errors
+        compilation_issues = self._check_compilation_errors(files)
+        issues.extend(compilation_issues)
+        if compilation_issues:
+            scores["completeness"] -= 30
+
+        # Enhanced vulnerability checks
+        vulnerability_issues = self._check_security_vulnerabilities(files)
+        issues.extend(vulnerability_issues)
+        if vulnerability_issues:
+            scores["security"] -= 25
 
         # Enhanced HTL validation
         htl_content = files.get('htl', '')
@@ -284,33 +328,46 @@ Provide a comprehensive analysis focusing on:
 1. **CODE COMPLETENESS** (0-100):
    - Are all methods fully implemented (no TODOs/placeholders)?
    - Are all required AEM files present and properly structured?
+   - Do Java class names match file names?
+   - Are package declarations consistent across files?
    - Is the component production-ready?
 
 2. **AEM BEST PRACTICES** (0-100):
    - Proper use of Sling Models and annotations
    - Correct HTL templating practices
    - Appropriate dialog structure
-   - Resource type naming conventions
+   - Resource type naming conventions and consistency
    - Component categorization
+   - No deprecated patterns (e.g., InjectionStrategy)
 
-3. **PERFORMANCE** (0-100):
+3. **COMPILATION SAFETY** (0-100):
+   - All required imports present
+   - No syntax errors or unmatched braces
+   - Proper getter methods for @ValueMapValue fields
+   - Valid HTL syntax
+   - No missing dependencies
+
+4. **PERFORMANCE** (0-100):
    - Efficient resource handling
    - Lazy loading implementation
    - Client library optimization
    - Caching considerations
+   - Proper resource cleanup
 
-4. **ACCESSIBILITY** (0-100):
+5. **ACCESSIBILITY** (0-100):
    - WCAG 2.1 compliance
    - ARIA attributes and labels
    - Semantic HTML structure
    - Keyboard navigation support
    - Screen reader compatibility
 
-5. **SECURITY** (0-100):
-   - XSS prevention measures
+6. **SECURITY** (0-100):
+   - XSS prevention measures (no unsafe innerHTML, eval, etc.)
    - Input validation and sanitization
    - Safe resource handling
-   - Authentication considerations
+   - No hardcoded secrets
+   - Proper HTL output escaping
+   - SQL injection prevention
 
 For a {component_type} component specifically, also check:
 - Component-specific best practices
@@ -383,3 +440,224 @@ Be thorough and specific in your feedback. Provide different scores and feedback
             "suggestions": all_suggestions,
             "details": merged_details
         }
+    
+    def _validate_java_class_consistency(self, java_content: str, file_path: str) -> List[str]:
+        """Validate that Java class name matches the file name"""
+        issues = []
+        
+        # Extract class name from Java content
+        class_match = re.search(r'public\s+class\s+(\w+)', java_content)
+        if not class_match:
+            issues.append("No public class declaration found in Sling Model")
+            return issues
+        
+        class_name = class_match.group(1)
+        
+        # Extract expected file name from path
+        if file_path:
+            expected_file_name = file_path.split('/')[-1].replace('.java', '')
+            if class_name != expected_file_name:
+                issues.append(f"Class name '{class_name}' does not match file name '{expected_file_name}.java'")
+        
+        # Check if class name follows naming conventions
+        if not class_name.endswith('Model'):
+            issues.append(f"Sling Model class '{class_name}' should end with 'Model' suffix")
+        
+        # Check if class name is PascalCase
+        if not re.match(r'^[A-Z][a-zA-Z0-9]*$', class_name):
+            issues.append(f"Class name '{class_name}' should be in PascalCase format")
+        
+        return issues
+    
+    def _validate_package_declarations(self, files: Dict[str, Any]) -> List[str]:
+        """Validate package declarations consistency"""
+        issues = []
+        
+        sling_model = files.get('slingModel', '')
+        project_structure = files.get('projectStructure', {})
+        
+        if sling_model:
+            # Extract package from Java code
+            package_match = re.search(r'package\s+([^;]+);', sling_model)
+            if not package_match:
+                issues.append("Missing package declaration in Sling Model")
+                return issues
+            
+            declared_package = package_match.group(1).strip()
+            
+            # Check if package follows expected structure
+            if not declared_package.endswith('core.models'):
+                issues.append(f"Package '{declared_package}' should end with '.core.models'")
+            
+            # Validate package path consistency
+            sling_model_path = project_structure.get('slingModelPath', '')
+            if sling_model_path:
+                # Extract expected package from file path
+                path_parts = sling_model_path.split('/')
+                java_index = -1
+                for i, part in enumerate(path_parts):
+                    if part == 'java':
+                        java_index = i
+                        break
+                
+                if java_index >= 0 and java_index + 1 < len(path_parts):
+                    package_path_parts = path_parts[java_index + 1:-1]  # Exclude file name
+                    expected_package = '.'.join(package_path_parts)
+                    
+                    if declared_package != expected_package:
+                        issues.append(f"Package declaration '{declared_package}' does not match file path '{expected_package}'")
+        
+        return issues
+    
+    def _check_compilation_errors(self, files: Dict[str, Any]) -> List[str]:
+        """Check for potential Java compilation errors"""
+        issues = []
+        
+        sling_model = files.get('slingModel', '')
+        if sling_model:
+            # Check for missing imports
+            required_patterns = {
+                '@Model': 'import org.apache.sling.models.annotations.Model;',
+                '@ValueMapValue': 'import org.apache.sling.models.annotations.injectorspecific.ValueMapValue;',
+                'Resource': 'import org.apache.sling.api.resource.Resource;',
+                '@Optional': 'import org.apache.sling.models.annotations.Optional;',
+                '@Default': 'import org.apache.sling.models.annotations.Default;',
+                '@PostConstruct': 'import javax.annotation.PostConstruct;',
+                'List<': 'import java.util.List;',
+                'ArrayList': 'import java.util.ArrayList;'
+            }
+            
+            for pattern, required_import in required_patterns.items():
+                if pattern in sling_model and required_import not in sling_model:
+                    issues.append(f"Missing import: {required_import}")
+            
+            # Check for deprecated injection strategy
+            if 'InjectionStrategy.OPTIONAL' in sling_model:
+                issues.append("Using deprecated InjectionStrategy.OPTIONAL - use @Optional annotation instead")
+            
+            # Check for proper @Model annotation
+            if '@Model' in sling_model:
+                if 'adaptables' not in sling_model or 'Resource.class' not in sling_model:
+                    issues.append("@Model annotation should specify adaptables = Resource.class")
+                
+                if 'resourceType' not in sling_model:
+                    issues.append("@Model annotation missing resourceType parameter")
+            
+            # Check for unmatched braces/parentheses
+            open_braces = sling_model.count('{')
+            close_braces = sling_model.count('}')
+            if open_braces != close_braces:
+                issues.append(f"Unmatched braces: {open_braces} opening, {close_braces} closing")
+            
+            open_parens = sling_model.count('(')
+            close_parens = sling_model.count(')')
+            if open_parens != close_parens:
+                issues.append(f"Unmatched parentheses: {open_parens} opening, {close_parens} closing")
+            
+            # Check for proper getter methods
+            value_map_fields = re.findall(r'@ValueMapValue[^;]*private\s+\w+\s+(\w+);', sling_model)
+            for field in value_map_fields:
+                getter_name = f"get{field.capitalize()}"
+                if getter_name not in sling_model:
+                    issues.append(f"Missing getter method '{getter_name}()' for field '{field}'")
+        
+        # Check HTL for proper syntax
+        htl_content = files.get('htl', '')
+        if htl_content:
+            # Check for unmatched HTML tags
+            open_tags = re.findall(r'<(\w+)[^>]*(?<!/)>', htl_content)
+            close_tags = re.findall(r'</(\w+)>', htl_content)
+            
+            for tag in open_tags:
+                if tag not in close_tags:
+                    issues.append(f"Unmatched HTML tag: <{tag}> has no closing tag")
+            
+            # Check for proper data-sly-use syntax
+            sly_use_matches = re.findall(r'data-sly-use\.\w+="([^"]*)"', htl_content)
+            for match in sly_use_matches:
+                if not re.match(r'^[a-zA-Z][a-zA-Z0-9.]*$', match):
+                    issues.append(f"Invalid data-sly-use class name: {match}")
+        
+        return issues
+    
+    def _check_security_vulnerabilities(self, files: Dict[str, Any]) -> List[str]:
+        """Check for security vulnerabilities"""
+        issues = []
+        
+        # Check all string content for vulnerabilities
+        all_content = ''
+        for file_name, content in files.items():
+            if isinstance(content, str):
+                all_content += f"\n--- {file_name} ---\n{content}\n"
+        
+        # XSS vulnerabilities
+        xss_patterns = [
+            (r'innerHTML\s*=', "Potential XSS: Use textContent instead of innerHTML"),
+            (r'document\.write\s*\(', "Potential XSS: Avoid document.write()"),
+            (r'eval\s*\(', "Security risk: Avoid eval() function"),
+            (r'Function\s*\(', "Security risk: Avoid Function() constructor"),
+            (r'setTimeout\s*\([^,)]*["\'][^"\']*["\']', "Potential XSS: Avoid string-based setTimeout"),
+            (r'setInterval\s*\([^,)]*["\'][^"\']*["\']', "Potential XSS: Avoid string-based setInterval")
+        ]
+        
+        for pattern, message in xss_patterns:
+            if re.search(pattern, all_content, re.IGNORECASE):
+                issues.append(message)
+        
+        # SQL Injection checks (for any database queries)
+        sql_patterns = [
+            (r'SELECT\s+.*\+.*FROM', "Potential SQL injection: Use parameterized queries"),
+            (r'INSERT\s+.*\+.*VALUES', "Potential SQL injection: Use parameterized queries"),
+            (r'UPDATE\s+.*SET.*\+', "Potential SQL injection: Use parameterized queries"),
+            (r'DELETE\s+.*WHERE.*\+', "Potential SQL injection: Use parameterized queries")
+        ]
+        
+        for pattern, message in sql_patterns:
+            if re.search(pattern, all_content, re.IGNORECASE):
+                issues.append(message)
+        
+        # Check for hardcoded secrets
+        secret_patterns = [
+            (r'password\s*=\s*["\'][^"\']+["\']', "Hardcoded password detected"),
+            (r'secret\s*=\s*["\'][^"\']+["\']', "Hardcoded secret detected"),
+            (r'api[_-]?key\s*=\s*["\'][^"\']+["\']', "Hardcoded API key detected"),
+            (r'token\s*=\s*["\'][^"\']+["\']', "Hardcoded token detected")
+        ]
+        
+        for pattern, message in secret_patterns:
+            if re.search(pattern, all_content, re.IGNORECASE):
+                issues.append(message)
+        
+        # Check Sling Model specific security issues
+        sling_model = files.get('slingModel', '')
+        if sling_model:
+            # Check for proper input validation
+            if '@ValueMapValue' in sling_model and 'StringUtils' not in sling_model:
+                issues.append("Consider adding input validation using StringUtils or similar")
+            
+            # Check for resource leaks
+            if 'ResourceResolver' in sling_model and 'close()' not in sling_model:
+                issues.append("Potential resource leak: ResourceResolver should be properly closed")
+            
+            # Check for proper null handling
+            value_map_fields = re.findall(r'@ValueMapValue[^;]*private\s+\w+\s+(\w+);', sling_model)
+            for field in value_map_fields:
+                getter_pattern = f"get{field.capitalize()}\\(\\)"
+                if re.search(getter_pattern, sling_model):
+                    getter_content = re.search(f"get{field.capitalize()}\\(\\)\\s*{{([^}}]+)}}", sling_model)
+                    if getter_content and 'null' not in getter_content.group(1).lower():
+                        issues.append(f"Getter for '{field}' should include null safety check")
+        
+        # Check HTL for XSS prevention
+        htl_content = files.get('htl', '')
+        if htl_content:
+            # Check for unescaped output
+            unescaped_patterns = re.findall(r'\$\{[^}]*@\s*context\s*=\s*["\']unsafe["\'][^}]*\}', htl_content)
+            if unescaped_patterns:
+                issues.append("Unsafe context detected in HTL - potential XSS vulnerability")
+            
+            # Check for direct JavaScript injection
+            if re.search(r'<script[^>]*>\s*\$\{', htl_content):
+                issues.append("Direct variable injection in script tag - potential XSS")
+        
+        return issues

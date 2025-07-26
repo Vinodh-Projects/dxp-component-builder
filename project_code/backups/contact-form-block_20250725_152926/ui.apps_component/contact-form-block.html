@@ -1,0 +1,52 @@
+<div data-sly-use.model="com.adobe.aem.guides.wknd.core.models.ContactFormBlockModel" class="contact-form-block">
+    <form class="contact-form-block__form" method="post" action="#">
+        <div class="contact-form-block__field">
+            <label for="firstName" class="contact-form-block__label">First Name</label>
+            <input type="text" id="firstName" name="firstName" class="contact-form-block__input" required aria-required="true" aria-describedby="firstNameHelp"/>
+            <span id="firstNameHelp" class="contact-form-block__help">User's first name</span>
+        </div>
+        <div class="contact-form-block__field">
+            <label for="lastName" class="contact-form-block__label">Last Name</label>
+            <input type="text" id="lastName" name="lastName" class="contact-form-block__input" required aria-required="true" aria-describedby="lastNameHelp"/>
+            <span id="lastNameHelp" class="contact-form-block__help">User's last name</span>
+        </div>
+        <div class="contact-form-block__field">
+            <label for="company" class="contact-form-block__label">Company</label>
+            <input type="text" id="company" name="company" class="contact-form-block__input" required aria-required="true" aria-describedby="companyHelp"/>
+            <span id="companyHelp" class="contact-form-block__help">User's company name</span>
+        </div>
+        <div class="contact-form-block__field">
+            <label for="email" class="contact-form-block__label">Email</label>
+            <input type="email" id="email" name="email" class="contact-form-block__input" required aria-required="true" aria-describedby="emailHelp" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"/>
+            <span id="emailHelp" class="contact-form-block__help">User's email address</span>
+        </div>
+        <div class="contact-form-block__field">
+            <label for="jobTitle" class="contact-form-block__label">Job Title</label>
+            <input type="text" id="jobTitle" name="jobTitle" class="contact-form-block__input" aria-describedby="jobTitleHelp"/>
+            <span id="jobTitleHelp" class="contact-form-block__help">User's job title</span>
+        </div>
+        <div class="contact-form-block__field">
+            <label for="country" class="contact-form-block__label">Country</label>
+            <select id="country" name="country" class="contact-form-block__input" required aria-required="true" aria-describedby="countryHelp">
+                <option value="">Select a country</option>
+                <option value="us">United States</option>
+                <option value="ca">Canada</option>
+                <!-- Add more countries as needed -->
+            </select>
+            <span id="countryHelp" class="contact-form-block__help">User's country</span>
+        </div>
+        <div class="contact-form-block__field">
+            <label for="message" class="contact-form-block__label">Message</label>
+            <textarea id="message" name="message" class="contact-form-block__input" aria-describedby="messageHelp"></textarea>
+            <span id="messageHelp" class="contact-form-block__help">User's message</span>
+        </div>
+        <div class="contact-form-block__field">
+            <input type="checkbox" id="marketingOptIn" name="marketingOptIn" class="contact-form-block__input" aria-describedby="marketingOptInHelp"/>
+            <label for="marketingOptIn" class="contact-form-block__label">Marketing Opt-in</label>
+            <span id="marketingOptInHelp" class="contact-form-block__help">User's consent for marketing communications</span>
+        </div>
+        <div class="contact-form-block__field">
+            <button type="submit" class="contact-form-block__button">Submit</button>
+        </div>
+    </form>
+</div>

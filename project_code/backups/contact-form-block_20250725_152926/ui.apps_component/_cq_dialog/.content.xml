@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+          xmlns:jcr="http://www.jcp.org/jcr/1.0"
+          xmlns:cq="http://www.day.com/jcr/cq/1.0"
+          jcr:primaryType="cq:Dialog"
+          jcr:title="Contact Form Block">
+    <content jcr:primaryType="nt:unstructured"
+             sling:resourceType="granite/ui/components/coral/foundation/container">
+        <items jcr:primaryType="nt:unstructured">
+            <firstName jcr:primaryType="nt:unstructured"
+                      sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                      fieldLabel="First Name"
+                      name="./firstName"
+                      required="true"
+                      requiredMessage="First Name is required."
+                      description="User's first name"/>
+            <lastName jcr:primaryType="nt:unstructured"
+                      sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                      fieldLabel="Last Name"
+                      name="./lastName"
+                      required="true"
+                      requiredMessage="Last Name is required."
+                      description="User's last name"/>
+            <company jcr:primaryType="nt:unstructured"
+                      sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                      fieldLabel="Company"
+                      name="./company"
+                      required="true"
+                      requiredMessage="Company is required."
+                      description="User's company name"/>
+            <email jcr:primaryType="nt:unstructured"
+                   sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                   fieldLabel="Email"
+                   name="./email"
+                   required="true"
+                   requiredMessage="Valid email is required."
+                   description="User's email address"
+                   validation="email"/>
+            <jobTitle jcr:primaryType="nt:unstructured"
+                      sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                      fieldLabel="Job Title"
+                      name="./jobTitle"
+                      description="User's job title"/>
+            <country jcr:primaryType="nt:unstructured"
+                     sling:resourceType="granite/ui/components/coral/foundation/form/select"
+                     fieldLabel="Country"
+                     name="./country"
+                     required="true"
+                     requiredMessage="Country is required."
+                     description="User's country">
+                <items jcr:primaryType="nt:unstructured">
+                    <us jcr:primaryType="nt:unstructured"
+                        text="United States"
+                        value="us"/>
+                    <ca jcr:primaryType="nt:unstructured"
+                        text="Canada"
+                        value="ca"/>
+                </items>
+            </country>
+            <message jcr:primaryType="nt:unstructured"
+                     sling:resourceType="granite/ui/components/coral/foundation/form/textarea"
+                     fieldLabel="Message"
+                     name="./message"
+                     description="User's message"/>
+            <marketingOptIn jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
+                            fieldLabel="Marketing Opt-in"
+                            name="./marketingOptIn"
+                            description="User's consent for marketing communications"/>
+        </items>
+    </content>
+</jcr:root>

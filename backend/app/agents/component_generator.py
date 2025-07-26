@@ -19,10 +19,12 @@ CRITICAL REQUIREMENTS:
 2. **Package names must be configurable** and follow provided package structure
 3. **All code must be complete and functional** - no placeholders, TODOs, or truncation
 4. **Follow AEM best practices** and naming conventions
-5. **Include proper error handling and validation**
-6. **Ensure accessibility compliance** (WCAG 2.1 AA)
-7. **Implement responsive design**
-8. **Add comprehensive JavaDoc and code comments**
+5. **Include proper error handling and validation** where necessary
+6. **Ensure accessibility compliance** (WCAG 2.1 AA) when UI elements are present
+7. **Implement responsive design** for visual components
+8. **Add comprehensive JavaDoc** for public methods and complex logic only
+9. **IMPORT ONLY WHAT YOU USE** - Do not add unnecessary imports
+10. **KEEP CODE MINIMAL** - Only add features and complexity that are actually needed
 
 HTL TEMPLATE REQUIREMENTS:
 - MUST start with: <div data-sly-use.model="[SLING_MODEL_CLASS]">
@@ -35,10 +37,38 @@ HTL TEMPLATE REQUIREMENTS:
 SLING MODEL REQUIREMENTS:
 - Use the provided package name (configurable)
 - Include proper @Model annotation with adaptables=Resource.class
-- Use @ValueMapValue for property injection with proper InjectionStrategy
-- Include null safety checks and default values
-- Add comprehensive JavaDoc
-- Follow AEM best practices for resource adaptation
+- **REQUIRED IMPORTS (always include these):**
+```java
+import org.apache.sling.api.resource.Resource;
+import org.apache.sling.models.annotations.Model;
+import org.apache.sling.models.annotations.injectorspecific.ValueMapValue;
+```
+- **CONDITIONAL IMPORTS (only import if used):**
+```java
+import org.apache.sling.models.annotations.Optional;     // Only if @Optional annotation is used
+import org.apache.sling.models.annotations.Default;     // Only if @Default annotation is used
+import javax.annotation.PostConstruct;                   // Only if @PostConstruct method exists
+import java.util.List;                                   // Only if List collections are used
+import java.util.ArrayList;                              // Only if ArrayList is instantiated
+import java.util.Collections;                            // Only if Collections utility is used
+import org.apache.commons.lang3.StringUtils;             // Only if StringUtils is used for string operations
+```
+- **CRITICAL ANNOTATION PATTERN - Use this EXACT pattern:**
+```java
+@ValueMapValue
+@Optional
+private String fieldName;
+```
+- **STRICTLY FORBIDDEN:**
+  - DO NOT USE: @ValueMapValue(injectionStrategy = InjectionStrategy.OPTIONAL) - this is deprecated
+  - DO NOT IMPORT: org.apache.sling.models.annotations.injectorspecific.InjectionStrategy - this is deprecated
+  - DO NOT import classes you don't actually use in the code
+- **CODE QUALITY:**
+  - Only add @PostConstruct method if initialization logic is actually needed
+  - Only use List/ArrayList if the component actually handles collections
+  - Include null safety checks and default values where appropriate
+  - Add comprehensive JavaDoc for public methods and complex logic
+  - Follow AEM best practices for resource adaptation
 
 DIALOG REQUIREMENTS:
 - Complete XML with proper namespaces
@@ -55,28 +85,28 @@ CLIENT LIBRARY REQUIREMENTS:
 
 PROJECT STRUCTURE OUTPUT:
 Generate files that follow standard AEM project structure:
-- HTL: ui.apps/src/main/content/jcr_root/apps/[appId]/components/[componentName]/[componentName].html
-- Sling Model: core/src/main/java/[packagePath]/models/[ComponentName]Model.java
-- Dialog: ui.apps/src/main/content/jcr_root/apps/[appId]/components/[componentName]/_cq_dialog/.content.xml
-- Content XML: ui.apps/src/main/content/jcr_root/apps/[appId]/components/[componentName]/.content.xml
+- HTL: ui.apps/src/main/content/jcr_root/apps/[appId]/components/[subFolder]/[componentName]/[componentName].html
+- Sling Model: core/src/main/java/[packagePath]/core/models/[ComponentName]Model.java
+- Dialog: ui.apps/src/main/content/jcr_root/apps/[appId]/components/[subFolder]/[componentName]/_cq_dialog/.content.xml
+- Content XML: ui.apps/src/main/content/jcr_root/apps/[appId]/components/[subFolder]/[componentName]/.content.xml
 
 OUTPUT STRUCTURE (Single JSON response):
 {
   "htl": "complete HTL template with data-sly-use directive",
   "slingModel": "complete Java Sling Model class with proper package",
   "dialog": "complete dialog XML configuration",
-  "contentXml": "complete .content.xml file",
+  "contentXml": "complete .content.xml file with proper sling:resourceType",
   "clientlibs": {
     "css": "complete responsive CSS file",
     "js": "complete JavaScript file with initialization",
     "categoriesXml": "complete .content.xml for clientlib categories"
   },
   "projectStructure": {
-    "htlPath": "ui.apps/src/main/content/jcr_root/apps/[appId]/components/[componentName]/[componentName].html",
-    "slingModelPath": "core/src/main/java/[packagePath]/models/[ComponentName]Model.java",
-    "dialogPath": "ui.apps/src/main/content/jcr_root/apps/[appId]/components/[componentName]/_cq_dialog/.content.xml",
-    "contentXmlPath": "ui.apps/src/main/content/jcr_root/apps/[appId]/components/[componentName]/.content.xml",
-    "clientlibPath": "ui.apps/src/main/content/jcr_root/apps/[appId]/components/[componentName]/clientlibs"
+    "htlPath": "ui.apps/src/main/content/jcr_root/apps/[appId]/components/[subFolder]/[componentName]/[componentName].html",
+    "slingModelPath": "core/src/main/java/[packagePath]/core/models/[ComponentName]Model.java",
+    "dialogPath": "ui.apps/src/main/content/jcr_root/apps/[appId]/components/[subFolder]/[componentName]/_cq_dialog/.content.xml",
+    "contentXmlPath": "ui.apps/src/main/content/jcr_root/apps/[appId]/components/[subFolder]/[componentName]/.content.xml",
+    "clientlibPath": "ui.apps/src/main/content/jcr_root/apps/[appId]/components/[subFolder]/[componentName]/clientlibs"
   }
 }
 
@@ -84,7 +114,69 @@ EXAMPLE HTL STRUCTURE:
 <div data-sly-use.model="com.mycompany.myproject.core.models.MyComponentModel" class="my-component">
     <h2 data-sly-test="${model.title}">${model.title}</h2>
     <p data-sly-test="${model.description}">${model.description}</p>
-</div>"""
+</div>
+
+EXAMPLE SLING MODEL STRUCTURE:
+```java
+package com.mycompany.myproject.core.models;
+
+import org.apache.sling.api.resource.Resource;
+import org.apache.sling.models.annotations.Model;
+import org.apache.sling.models.annotations.Default;
+import org.apache.sling.models.annotations.Optional;
+import org.apache.sling.models.annotations.injectorspecific.ValueMapValue;
+
+/**
+ * Sling Model for My Component
+ */
+@Model(adaptables = Resource.class, resourceType = "myapp/components/subfolder/mycomponent")
+public class MyComponentModel {
+    
+    @ValueMapValue
+    @Optional
+    @Default(values = "Default Title")
+    private String title;
+    
+    @ValueMapValue
+    @Optional
+    private String description;
+    
+    /**
+     * Get the component title
+     * @return title or default value if not set
+     */
+    public String getTitle() {
+        return title;
+    }
+    
+    /**
+     * Get the component description
+     * @return description or null if not set
+     */
+    public String getDescription() {
+        return description;
+    }
+}
+```
+
+EXAMPLE CONTENT XML STRUCTURE:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+    jcr:primaryType="cq:Component"
+    jcr:title="My Component"
+    sling:resourceType="myapp/components/subfolder/mycomponent"
+    componentGroup="MyApp.Content"/>
+```
+
+CRITICAL: 
+1. Follow this exact pattern - do NOT use injectionStrategy parameter!
+2. DO NOT import InjectionStrategy - it's deprecated!
+3. ALWAYS include sling:resourceType in content.xml that matches the @Model resourceType!
+4. Ensure resourceType path matches the actual component folder structure!
+5. ONLY IMPORT WHAT YOU ACTUALLY USE - avoid unnecessary imports!
+6. KEEP IT SIMPLE - don't over-engineer with unused features like @PostConstruct, List collections, or complex logic unless specifically required!
+7. DEFAULT VALUES - Use meaningful defaults, not empty strings unless appropriate!"""
     
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate complete AEM component"""
@@ -123,9 +215,15 @@ EXAMPLE HTL STRUCTURE:
         package_name = options.get('package_name', options.get('packageName', settings.DEFAULT_PACKAGE_NAME))  # Support both naming conventions
         package_path = package_name.replace('.', '/')
         
+        # Handle subfolder structure for components (e.g., wkndai)
+        sub_folder = options.get('sub_folder', options.get('subFolder', 'wkndai'))  # Default to wkndai subfolder
+        
         # Build the complete component class name
         component_class_name = f"{component_name.title().replace('-', '')}Model"
         full_model_class = f"{package_name}.core.models.{component_class_name}"
+        
+        # Build the complete resource type path including subfolder
+        resource_type = f"{app_id}/components/{sub_folder}/{component_name}"
         
         prompt = f"""Generate a complete AEM component based on these specifications:
 
@@ -136,7 +234,9 @@ CONFIGURATION:
 - Component Name: {component_name}
 - Display Name: {display_name}
 - Component Group: {group}
+- Sub Folder: {sub_folder}
 - Sling Model Class: {full_model_class}
+- Resource Type: {resource_type}
 
 REQUIREMENTS:
 {json.dumps(requirements, indent=2)}
@@ -159,8 +259,9 @@ CRITICAL IMPLEMENTATION REQUIREMENTS:
 2. **Sling Model Requirements:**
    - Package: {package_name}.core.models
    - Class name: {component_class_name}
-   - @Model(adaptables = Resource.class, resourceType = "{app_id}/components/{component_name}")
-   - Use @ValueMapValue with proper InjectionStrategy.OPTIONAL
+   - @Model(adaptables = Resource.class, resourceType = "{resource_type}")
+   - Use @ValueMapValue with @Optional annotation pattern (NO injectionStrategy parameter)
+   - DO NOT import org.apache.sling.models.annotations.injectorspecific.InjectionStrategy
    - Include @PostConstruct method if needed
    - Add null safety checks and default values
 
@@ -168,22 +269,24 @@ CRITICAL IMPLEMENTATION REQUIREMENTS:
    - Must include all properties that exist in the Sling Model
    - Use appropriate Granite UI components
    - Include proper validation and help text
-   - Resource type: {app_id}/components/{component_name}
+   - Resource type: {resource_type}
 
 4. **Content XML Requirements:**
    - jcr:primaryType="cq:Component"
-   - sling:resourceType="{app_id}/components/{component_name}"
+   - sling:resourceType="{resource_type}"
    - componentGroup="{group}"
    - jcr:title="{display_name}"
+   - CRITICAL: sling:resourceType MUST match the @Model resourceType exactly!
 
 5. **Project Structure:**
-   - HTL: ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{component_name}/{component_name}.html
+   - HTL: ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{sub_folder}/{component_name}/{component_name}.html
    - Sling Model: core/src/main/java/{package_path}/core/models/{component_class_name}.java
-   - Dialog: ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{component_name}/_cq_dialog/.content.xml
-   - Content: ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{component_name}/.content.xml
+   - Dialog: ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{sub_folder}/{component_name}/_cq_dialog/.content.xml
+   - Content: ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{sub_folder}/{component_name}/.content.xml
 
 Generate ALL files with complete, production-ready code. No placeholders, TODOs, or truncation.
-Ensure the HTL template properly uses the data-sly-use directive to include the Sling Model."""
+Ensure the HTL template properly uses the data-sly-use directive to include the Sling Model.
+Ensure the content.xml includes the correct sling:resourceType that matches the Sling Model @Model annotation."""
 
         return prompt
     
@@ -201,10 +304,11 @@ Ensure the HTL template properly uses the data-sly-use directive to include the 
         
         # Ensure all required files are present
         required_files = ['slingModel', 'htl', 'dialog', 'contentXml']
+        sub_folder = options.get('sub_folder', options.get('subFolder', 'wkndai'))
         for file in required_files:
             if not generated.get(file):
                 self.logger.warning(f"Missing required file: {file}")
-                generated[file] = self._generate_fallback_content(file, component_name, package_name, app_id)
+                generated[file] = self._generate_fallback_content(file, component_name, package_name, app_id, sub_folder)
         
         # Fix HTL to ensure it uses data-sly-use
         if 'htl' in generated:
@@ -212,16 +316,19 @@ Ensure the HTL template properly uses the data-sly-use directive to include the 
         
         # Fix Sling Model package declaration
         if 'slingModel' in generated:
+            sub_folder = options.get('sub_folder', options.get('subFolder', 'wkndai'))
             generated['slingModel'] = self._fix_sling_model_package(
                 generated['slingModel'], 
                 component_name, 
                 package_name,
-                app_id
+                app_id,
+                sub_folder
             )
         
         # Add project structure paths
+        sub_folder = options.get('sub_folder', options.get('subFolder', 'wkndai'))
         generated['projectStructure'] = self._generate_project_structure(
-            component_name, package_name, app_id
+            component_name, package_name, app_id, sub_folder
         )
         
         return generated
@@ -260,12 +367,12 @@ Ensure the HTL template properly uses the data-sly-use directive to include the 
         
         return htl_content
     
-    def _fix_sling_model_package(self, sling_model: str, component_name: str, package_name: str, app_id: str) -> str:
+    def _fix_sling_model_package(self, sling_model: str, component_name: str, package_name: str, app_id: str, sub_folder: str = "wkndai") -> str:
         """Fix Sling Model package and ensure proper annotations"""
         
         component_class_name = f"{component_name.title().replace('-', '')}Model"
         proper_package = f"{package_name}.core.models"
-        resource_type = f"{app_id}/components/{component_name}"
+        resource_type = f"{app_id}/components/{sub_folder}/{component_name}"
         
         # Replace generic package with proper one
         
@@ -274,6 +381,9 @@ Ensure the HTL template properly uses the data-sly-use directive to include the 
             sling_model = re.sub(r'package [^;]+;', f'package {proper_package};', sling_model)
         else:
             sling_model = f'package {proper_package};\n\n{sling_model}'
+        
+        # Fix deprecated annotation patterns
+        sling_model = self._fix_deprecated_annotations(sling_model)
         
         # Ensure proper @Model annotation with resourceType
         if '@Model' in sling_model:
@@ -302,24 +412,74 @@ Ensure the HTL template properly uses the data-sly-use directive to include the 
         
         return sling_model
     
-    def _generate_project_structure(self, component_name: str, package_name: str, app_id: str) -> Dict:
+    def _fix_deprecated_annotations(self, java_content: str) -> str:
+        """Fix deprecated annotation patterns in Java code and add only necessary imports"""
+        
+        # Fix the deprecated @ValueMapValue(injectionStrategy = InjectionStrategy.OPTIONAL) pattern
+        # Replace with modern @ValueMapValue + @Optional pattern
+        java_content = re.sub(
+            r'@ValueMapValue\(injectionStrategy\s*=\s*InjectionStrategy\.OPTIONAL\)\s*\n(\s*)(@Default[^\n]*\n)?(\s*)',
+            r'@ValueMapValue\n\1@Optional\n\2\3',
+            java_content,
+            flags=re.MULTILINE
+        )
+        
+        # Remove any InjectionStrategy imports since they're deprecated
+        java_content = re.sub(
+            r'import\s+org\.apache\.sling\.models\.annotations\.injectorspecific\.InjectionStrategy;\s*\n',
+            '',
+            java_content
+        )
+        
+        # Define conditional imports - only add if the pattern is actually used in the code
+        conditional_imports = {
+            '@Optional': 'import org.apache.sling.models.annotations.Optional;',
+            '@Default': 'import org.apache.sling.models.annotations.Default;',
+            'ArrayList': 'import java.util.ArrayList;',
+            'List<': 'import java.util.List;',
+            '@PostConstruct': 'import javax.annotation.PostConstruct;',
+            'Collections.': 'import java.util.Collections;',
+            'StringUtils.': 'import org.apache.commons.lang3.StringUtils;'
+        }
+        
+        # Add missing imports only if they are actually used
+        missing_imports = []
+        for usage_pattern, import_stmt in conditional_imports.items():
+            if usage_pattern in java_content and import_stmt not in java_content:
+                missing_imports.append(import_stmt)
+        
+        # Insert missing imports after package declaration
+        if missing_imports:
+            package_match = re.search(r'(package\s+[^;]+;\s*)', java_content)
+            if package_match:
+                package_line = package_match.group(1)
+                imports_text = '\n' + '\n'.join(missing_imports) + '\n'
+                java_content = java_content.replace(package_line, package_line + imports_text)
+        
+        return java_content
+    
+    def _generate_project_structure(self, component_name: str, package_name: str, app_id: str, sub_folder: str = "wkndai") -> Dict:
         """Generate project structure paths"""
         
+        # The package structure should match the actual package declaration
+        # Since we use package_name.core.models in the Java code, the path should include core/models
         package_path = package_name.replace('.', '/')
         component_class_name = f"{component_name.title().replace('-', '')}Model"
         
         return {
-            "htlPath": f"ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{component_name}/{component_name}.html",
+            "htlPath": f"ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{sub_folder}/{component_name}/{component_name}.html",
             "slingModelPath": f"core/src/main/java/{package_path}/core/models/{component_class_name}.java",
-            "dialogPath": f"ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{component_name}/_cq_dialog/.content.xml",
-            "contentXmlPath": f"ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{component_name}/.content.xml",
-            "clientlibCssPath": f"ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{component_name}/clientlibs/css/{component_name}.css",
-            "clientlibJsPath": f"ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{component_name}/clientlibs/js/{component_name}.js",
-            "clientlibConfigPath": f"ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{component_name}/clientlibs/.content.xml"
+            "dialogPath": f"ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{sub_folder}/{component_name}/_cq_dialog/.content.xml",
+            "contentXmlPath": f"ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{sub_folder}/{component_name}/.content.xml",
+            "clientlibCssPath": f"ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{sub_folder}/{component_name}/clientlibs/css/{component_name}.css",
+            "clientlibJsPath": f"ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{sub_folder}/{component_name}/clientlibs/js/{component_name}.js",
+            "clientlibConfigPath": f"ui.apps/src/main/content/jcr_root/apps/{app_id}/components/{sub_folder}/{component_name}/clientlibs/.content.xml"
         }
     
-    def _generate_fallback_content(self, file_type: str, component_name: str, package_name: str, app_id: str) -> str:
+    def _generate_fallback_content(self, file_type: str, component_name: str, package_name: str, app_id: str, sub_folder: str = "wkndai") -> str:
         """Generate fallback content for missing files"""
+        
+        resource_type = f"{app_id}/components/{sub_folder}/{component_name}"
         
         if file_type == 'htl':
             return f'''<div data-sly-use.model="{package_name}.core.models.{component_name.title().replace('-', '')}Model" class="{component_name}">
@@ -331,20 +491,24 @@ Ensure the HTL template properly uses the data-sly-use directive to include the 
             return f'''package {package_name}.core.models;
 
 import org.apache.sling.api.resource.Resource;
-import org.apache.sling.models.annotations.Default;
 import org.apache.sling.models.annotations.Model;
-import org.apache.sling.models.annotations.injectorspecific.InjectionStrategy;
+import org.apache.sling.models.annotations.Default;
+import org.apache.sling.models.annotations.Optional;
 import org.apache.sling.models.annotations.injectorspecific.ValueMapValue;
 
-@Model(adaptables = Resource.class, resourceType = "{app_id}/components/{component_name}")
+/**
+ * Sling Model for {component_name.title().replace('-', ' ')} component
+ */
+@Model(adaptables = Resource.class, resourceType = "{resource_type}")
 public class {component_name.title().replace('-', '')}Model {{
     
-    @ValueMapValue(injectionStrategy = InjectionStrategy.OPTIONAL)
-    @Default(values = "")
+    @ValueMapValue
+    @Optional
+    @Default(values = "Default Title")
     private String title;
     
-    @ValueMapValue(injectionStrategy = InjectionStrategy.OPTIONAL)
-    @Default(values = "")
+    @ValueMapValue
+    @Optional
     private String description;
     
     public String getTitle() {{
@@ -355,6 +519,14 @@ public class {component_name.title().replace('-', '')}Model {{
         return description;
     }}
 }}'''
+        
+        elif file_type == 'contentXml':
+            return f'''<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+    jcr:primaryType="cq:Component"
+    jcr:title="{component_name.title().replace('-', ' ')}"
+    sling:resourceType="{resource_type}"
+    componentGroup="Custom"/>'''
         
         return ""
 

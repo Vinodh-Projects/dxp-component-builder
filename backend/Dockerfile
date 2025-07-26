@@ -6,7 +6,13 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
+    curl \
+    maven \
+    default-jdk \
     && rm -rf /var/lib/apt/lists/*
+
+# Set JAVA_HOME for Maven
+ENV JAVA_HOME=/usr/lib/jvm/default-java
 
 # Install dependencies
 COPY requirements.txt .

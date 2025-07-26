@@ -9,10 +9,17 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - REDIS_URL=redis://redis:6379
+      # AEM Deployment Configuration
+      - AEM_AUTHOR_URL=${AEM_AUTHOR_URL:-http://host.docker.internal:4502}
+      - AEM_USERNAME=${AEM_USERNAME:-admin}
+      - AEM_PASSWORD=${AEM_PASSWORD:-admin}
+      - MAVEN_PROFILES=${MAVEN_PROFILES:-adobe-public,autoInstallPackage}
+      - SKIP_TESTS=${SKIP_TESTS:-true}
     depends_on:
       - redis
     volumes:
       - ./uploads:/tmp/aem_uploads
+      - ./project_code:/app/project_code  # Mount project code for AEM deployment
     restart: unless-stopped
 
   redis:

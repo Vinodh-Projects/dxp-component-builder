@@ -29,13 +29,47 @@ OUTPUT FORMAT (JSON only - no other text):
 }
 
 SLING MODEL REQUIREMENTS:
-- Package: com.company.projectname.models
-- Include ALL necessary imports
-- Complete @Model annotation with adaptables and resourceType
-- All field declarations with proper annotations (@ValueMapValue, @ChildResource, etc.)
+- Package: com.adobe.aem.guides.wknd.core.models
+- Class name should be PascalCase version of the component name with "Model" suffix (e.g., "feature-grid" -> "FeatureGridModel", "accordion" -> "AccordionModel", "two-column-layout" -> "TwoColumnLayoutModel")
+- Include ALL necessary imports in this exact order:
+  • Standard Java imports (java.util.*, javax.annotation.*)
+  • Apache Sling imports (org.apache.sling.api.*, org.apache.sling.models.annotations.*)
+  • AEM-specific imports if needed (com.day.cq.*)
+- REQUIRED IMPORTS TEMPLATE:
+```java
+import javax.annotation.PostConstruct;
+import java.util.List;
+import java.util.ArrayList;
+import org.apache.sling.api.resource.Resource;
+import org.apache.sling.models.annotations.Model;
+import org.apache.sling.models.annotations.Default;
+import org.apache.sling.models.annotations.Optional;
+import org.apache.sling.models.annotations.injectorspecific.ValueMapValue;
+import org.apache.sling.models.annotations.injectorspecific.InjectionStrategy;
+```
+- Use @Model annotation with adaptables and resourceType
+- For optional fields use: @ValueMapValue @Optional (NOT injectionStrategy parameter)
 - Complete getter methods with null checks
 - Proper error handling and validation
 - No truncation or placeholder comments
+
+CLASS NAMING EXAMPLES:
+- Component name: "feature-grid" → Class name: "FeatureGridModel"
+- Component name: "accordion" → Class name: "AccordionModel"  
+- Component name: "two-column-layout" → Class name: "TwoColumnLayoutModel"
+- Component name: "hero-banner" → Class name: "HeroBannerModel"
+
+CORRECT ANNOTATION PATTERN:
+```java
+@ValueMapValue
+@Optional
+private String fieldName;
+```
+
+NOT:
+```java
+@ValueMapValue(injectionStrategy = InjectionStrategy.OPTIONAL)  // AVOID THIS
+```
 
 IMPORTANT:
 - Provide complete, functional code without truncation

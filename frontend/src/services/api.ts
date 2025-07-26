@@ -1,5 +1,5 @@
 // services/api.ts
-import { Component, ChatMessage, ComponentResponse, APIOptions } from '../types';
+import { Component, ChatMessage, ComponentResponse, ComponentPreview, APIOptions } from '../types';
 import { LRUCache } from '../utils/cache';
 
 class APIServiceClass {
@@ -93,6 +93,17 @@ class APIServiceClass {
     return data;
   }
 
+  async getComponentPreview(requestId: string): Promise<ComponentPreview> {
+    const response = await fetch(`${this.baseURL}/api/v1/components/preview/${requestId}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get component preview: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  }
+
   saveComponent(component: Component): void {
     const components = this.getComponents();
     components.unshift(component);
@@ -162,6 +173,161 @@ class APIServiceClass {
     // Clear localStorage and cache for fresh testing
     localStorage.removeItem('dxp_components');
     this.cache.clear();
+  }
+
+  // AEM Deployment Methods
+  async deployToAEM(): Promise<{ deployment_id: string; status: string; message: string }> {
+    const response = await fetch(`${this.baseURL}/api/v1/aem/deploy`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Deployment failed: ${errorData.detail || response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  // Simple Build and Deploy - Recommended for frontend use
+  async simpleDeployToAEM(): Promise<{ 
+    deployment_id: string; 
+    status: string; 
+    message: string;
+    maven_command: string;
+  }> {
+    const response = await fetch(`${this.baseURL}/api/v1/aem/deploy/simple-bg`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Simple deployment failed: ${errorData.detail || response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  // Synchronous simple deployment (for immediate results)
+  async simpleDeploySync(): Promise<{
+    success: boolean;
+    message: string;
+    duration?: number;
+    build_log?: string;
+    deployed_packages?: string[];
+    maven_command?: string;
+    error?: string;
+  }> {
+    const response = await fetch(`${this.baseURL}/api/v1/aem/deploy/simple`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Simple sync deployment failed: ${errorData.detail || response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  async getDeploymentStatus(deploymentId: string): Promise<{
+    deployment_id: string;
+    status: string;
+    success?: boolean;
+    message?: string;
+    build_duration?: number;
+    deploy_duration?: number;
+    deployed_packages?: string[];
+    error?: string;
+  }> {
+    const response = await fetch(`${this.baseURL}/api/v1/aem/deploy/status/${deploymentId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Status check failed: ${errorData.detail || response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  async getAEMServerStatus(): Promise<{
+    server_available: boolean;
+    server_url: string;
+    response?: string;
+    error?: string;
+  }> {
+    const response = await fetch(`${this.baseURL}/api/v1/aem/server/status`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Server status check failed: ${errorData.detail || response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  async buildModule(moduleName: string): Promise<{
+    success: boolean;
+    module: string;
+    message: string;
+    build_output?: string;
+    deploy_output?: string;
+    error?: string;
+  }> {
+    const response = await fetch(`${this.baseURL}/api/v1/aem/build/${moduleName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Module build failed: ${errorData.detail || response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  async getDeploymentConfig(): Promise<{
+    project_path: string;
+    aem_server_url: string;
+    aem_username: string;
+    maven_profiles: string;
+    skip_tests: boolean;
+  }> {
+    const response = await fetch(`${this.baseURL}/api/v1/aem/config`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Config retrieval failed: ${errorData.detail || response.statusText}`);
+    }
+    
+    return response.json();
   }
 
   private async base64ToBlob(base64: string): Promise<Blob> {

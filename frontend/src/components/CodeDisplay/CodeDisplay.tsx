@@ -1,10 +1,12 @@
 // components/CodeDisplay/CodeDisplay.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Copy, Check, Code,
   Upload, GitBranch, Hammer, Loader
 } from 'lucide-react';
 import { Component, GenerationStatus } from '../../types';
+import { APIService } from '../../services/api';
+import { ComponentPreviewModal } from '../PreviewModal/ComponentPreviewModal';
 
 interface CodeDisplayProps {
   selectedComponent: Component | null;
@@ -23,11 +25,148 @@ export const CodeDisplay: React.FC<CodeDisplayProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<string>('htl');
   const [copied, setCopied] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [deployState, setDeployState] = useState({
+    isDeploying: false,
+    deploymentId: null as string | null,
+    status: '',
+    progress: 0,
+    logs: [] as string[],
+    error: null as string | null
+  });
+
+  // Auto-clear deployment errors after 1 minute
+  useEffect(() => {
+    if (deployState.error && !deployState.isDeploying) {
+      const timer = setTimeout(() => {
+        setDeployState(prev => ({
+          ...prev,
+          error: null,
+          logs: [...prev.logs, '[Auto-cleared] Error cleared after 1 minute']
+        }));
+      }, 60000); // 60 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [deployState.error, deployState.isDeploying]);
 
   const copyToClipboard = (code: string) => {
     navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handlePreview = () => {
+    if (!selectedComponent?.response?.request_id) {
+      console.log('No component request ID available for preview');
+      return;
+    }
+    setShowPreviewModal(true);
+  };
+
+  const handleSimpleDeploy = async () => {
+    if (!selectedComponent) {
+      console.log('No component selected for deployment');
+      return;
+    }
+
+    try {
+      setDeployState({
+        isDeploying: true,
+        deploymentId: null,
+        status: 'Starting deployment...',
+        progress: 0,
+        logs: [],
+        error: null
+      });
+
+      console.log('Starting simple deployment...');
+      
+      // Start background deployment
+      const deploymentResult = await APIService.simpleDeployToAEM();
+      
+      if (deploymentResult.deployment_id) {
+        setDeployState(prev => ({
+          ...prev,
+          deploymentId: deploymentResult.deployment_id,
+          status: deploymentResult.message || 'Deployment started, monitoring progress...',
+          progress: 10
+        }));
+
+        // Poll for deployment status
+        const pollInterval = setInterval(async () => {
+          try {
+            console.log(`Polling deployment status for ID: ${deploymentResult.deployment_id}`);
+            const statusResult = await APIService.getDeploymentStatus(deploymentResult.deployment_id!);
+            
+            if (statusResult) {
+              const { status, message, error } = statusResult;
+              
+              setDeployState(prev => ({
+                ...prev,
+                status: message || status || 'Processing...',
+                progress: status === 'completed' ? 100 : status === 'running' ? 50 : prev.progress,
+                logs: prev.logs, // Keep existing logs since API doesn't return logs array
+                error: error || null
+              }));
+
+              // Check if deployment is complete
+              if (status === 'completed' || status === 'failed' || error) {
+                clearInterval(pollInterval);
+                setDeployState(prev => ({
+                  ...prev,
+                  isDeploying: false,
+                  status: status === 'completed' ? 'Deployment completed successfully!' : 'Deployment failed',
+                  progress: status === 'completed' ? 100 : prev.progress
+                }));
+                
+                // Auto-hide status after 5 seconds for successful deployments
+                if (status === 'completed') {
+                  setTimeout(() => {
+                    setDeployState(prev => ({
+                      ...prev,
+                      status: '',
+                      progress: 0,
+                      logs: [],
+                      deploymentId: null
+                    }));
+                  }, 5000);
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error polling deployment status:', error);
+            clearInterval(pollInterval);
+            setDeployState(prev => ({
+              ...prev,
+              isDeploying: false,
+              status: 'Error checking deployment status',
+              error: error instanceof Error ? error.message : 'Unknown error',
+              progress: 0
+            }));
+          }
+        }, 2000); // Poll every 2 seconds
+
+      } else {
+        setDeployState(prev => ({
+          ...prev,
+          isDeploying: false,
+          status: 'Failed to start deployment',
+          error: deploymentResult.message || 'Unknown error occurred',
+          progress: 0
+        }));
+      }
+
+    } catch (error) {
+      console.error('Simple deployment error:', error);
+      setDeployState(prev => ({
+        ...prev,
+        isDeploying: false,
+        status: 'Deployment failed',
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        progress: 0
+      }));
+    }
   };
 
   const getCodeForTab = (component: Component, tab: string): string => {
@@ -170,18 +309,27 @@ export const CodeDisplay: React.FC<CodeDisplayProps> = ({
           </h2>
           <div className="flex items-center gap-1">
             <button
-              onClick={onBuild}
+              onClick={handlePreview}
               className="px-2 py-1 bg-green-600 hover:bg-green-700 rounded text-xs flex items-center gap-1 transition-colors"
             >
               <Hammer className="w-3 h-3" />
-              Build
+              Preview
             </button>
             <button
-              onClick={onDeploy}
-              className="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs flex items-center gap-1 transition-colors"
+              onClick={handleSimpleDeploy}
+              disabled={deployState.isDeploying}
+              className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-colors ${
+                deployState.isDeploying 
+                  ? 'bg-gray-600 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             >
-              <Upload className="w-3 h-3" />
-              Deploy
+              {deployState.isDeploying ? (
+                <Loader className="w-3 h-3 animate-spin" />
+              ) : (
+                <Upload className="w-3 h-3" />
+              )}
+              {deployState.isDeploying ? 'Deploying...' : 'Deploy'}
             </button>
             <button
               onClick={onPublishToGit}
@@ -193,6 +341,47 @@ export const CodeDisplay: React.FC<CodeDisplayProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Deployment Status Section */}
+      {(deployState.status || deployState.error) && (
+        <div className="flex-shrink-0 border-b border-gray-800 bg-gray-950">
+          <div className="px-4 py-3">
+            {deployState.error ? (
+              <div className="flex items-start gap-3 p-3 bg-red-900/20 border border-red-600/30 rounded-lg">
+                <span className="text-red-400 text-lg flex-shrink-0">❌</span>
+                <div className="flex-1">
+                  <h3 className="text-red-300 font-medium mb-1">Deployment Failed</h3>
+                  <p className="text-red-200 text-sm">{deployState.error}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3 p-3 bg-blue-900/20 border border-blue-600/30 rounded-lg">
+                <div className="flex-shrink-0">
+                  {deployState.isDeploying ? (
+                    <Loader className="w-5 h-5 animate-spin text-blue-400" />
+                  ) : (
+                    <span className="text-blue-400 text-lg">🚀</span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-blue-300 font-medium mb-1">
+                    {deployState.isDeploying ? 'Deployment In Progress' : 'Deployment Status'}
+                  </h3>
+                  <p className="text-blue-200 text-sm mb-2">{deployState.status}</p>
+                  {deployState.isDeploying && (
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div
+                        className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${deployState.progress}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Code Display Section - Enhanced */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -296,6 +485,15 @@ export const CodeDisplay: React.FC<CodeDisplayProps> = ({
             </div>
           )}
       </div>
+      
+      {/* Component Preview Modal */}
+      {selectedComponent?.response?.request_id && (
+        <ComponentPreviewModal
+          isOpen={showPreviewModal}
+          onClose={() => setShowPreviewModal(false)}
+          requestId={selectedComponent.response.request_id}
+        />
+      )}
     </div>
   );
 };

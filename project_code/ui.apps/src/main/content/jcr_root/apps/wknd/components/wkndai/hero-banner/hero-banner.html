@@ -1,0 +1,14 @@
+<div data-sly-use.model="com.adobe.aem.guides.wknd.core.models.HeroBannerModel" class="hero-banner">
+    <section class="hero" role="region" aria-label="${model.headline}">
+        <div class="hero__content" data-sly-test="${model.headline}">
+            <h1 class="hero__title">${model.headline}</h1>
+            <p class="hero__subheadline" data-sly-test="${model.subheadline}">${model.subheadline}</p>
+            <div class="hero__cta-buttons" data-sly-test="${model.ctaButtons}">
+                <a data-sly-repeat="${model.ctaButtons}" href="${item.link}" class="hero__cta" aria-label="${item.text}">${item.text}</a>
+            </div>
+        </div>
+        <div class="hero__image" data-sly-test="${model.backgroundImage}">
+            <img src="${model.backgroundImage}" alt="${model.headline}" />
+        </div>
+    </section>
+</div>

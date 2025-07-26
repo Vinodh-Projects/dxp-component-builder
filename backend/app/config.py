@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     
     # Model Configuration
     GPT4_MODEL: str = "gpt-4o"  # Updated to current model
-    GPT4_VISION_MODEL: str = "gpt-4o"  # Updated to current model
+    GPT4_VISION_MODEL: str = "o4-mini"  # Updated to current model
     CLAUDE_MODEL: str = "claude-3-opus-20240229"
     
     # Performance Configuration
@@ -32,8 +32,22 @@ class Settings(BaseSettings):
     ENABLE_CACHING: bool = True
     
     # Default AEM Project Configuration
-    DEFAULT_APP_ID: str = "myapp"
-    DEFAULT_PACKAGE_NAME: str = "com.mycompany.myapp"
+    DEFAULT_APP_ID: str = "wknd"
+    DEFAULT_PACKAGE_NAME: str = "com.adobe.aem.guides.wknd"
+    AI_COMPONENTS_SUBFOLDER: str = "wkndai"
+    
+    # Project Organization Settings
+    PROJECT_CODE_PATH: str = "/app/project_code"
+    AUTO_ORGANIZE_COMPONENTS: bool = True
+    BACKUP_EXISTING_COMPONENTS: bool = True
+    
+    # AEM Deployment Settings
+    AEM_AUTHOR_URL: str = "http://host.docker.internal:4502"
+    AEM_USERNAME: str = "admin"
+    AEM_PASSWORD: str = "admin"
+    MAVEN_PROFILES: str = "adobe-public,autoInstallPackage"
+    SKIP_TESTS: bool = True
+    AEM_MOCK_MODE: bool = False  # Disable mock mode to use real AEM server
     
     class Config:
         env_file = ".env"
